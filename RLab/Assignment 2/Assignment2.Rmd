@@ -1,0 +1,494 @@
+---
+title: "Assignment_2"
+output: html_document
+date: "2023-10-16"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+css=read.table("Bankingfull.txt", header=T, sep="\t")
+Age=css[,1]
+Education=css[,2]
+Income=css[,3]
+HomeVal=css[,4]
+Wealth=css[,5]
+Balance=css[,6]
+
+
+```
+
+```{r}
+summary(css)
+```
+
+#Problem 1
+
+a)  Create scatterplots to visualize the associations between bank
+    balance and the other five variables.
+
+```{r}
+plot(Balance,Age, main="Scatterplot of Age vs Account Balance")
+
+```
+
+From above graph. we can observe that the association between Balance
+and Age looks fairly linear with few outliers.
+
+```{r}
+plot(Balance,Education, main="Scatterplot of Eduction vs Account Balance")
+
+```
+
+From above graph. we can observe that the association between Balance
+and Education looks linear with less amount of outliers.
+
+```{r}
+plot(Balance,Income, main="Scatterplot of Income vs Account Balance")
+
+```
+
+From above graph. we can observe that the association between Balance
+and Income looks linear with few outliers.It seems that both are
+strongly correlated.
+
+```{r}
+plot(Balance,HomeVal, main="Scatterplot of Account Balance vs HomeVal ")
+
+```
+
+From above graph. we can observe that the association between Balance
+and HomeVal looks linear with less outliers.
+
+```{r}
+plot(Balance,Wealth, main="Scatterplot of Balance vs Wealth ")
+```
+
+From above graph. we can observe that the association between Balance
+and Wealth looks linear with no outliers.It seems that wealth and
+Balance are strongly correlated.
+
+b)  Compute correlation values of bank balance vs the other variables.
+    Interpret the correlation values, and discuss which variables appear
+    to be strongly associated.
+
+```{r}
+cor(css, method="pearson") 
+```
+
+Above data shows all the possible correlations. Here we can observe that
+with account balance, wealth and Income are strongly correlated as
+(Balance and income) has correlation value of 0.9516845. While, (balance
+and Wealth) has correlation value of 0.9487117.We can also say (balance
+and Homeval) are strongly correalted with 0.7663871. Other than that,
+apart of all the correlations with balance, (wealth and income) with
+0.9466654 , (Education and HomeVal) with 0.7535211 are also strongly
+correlated
+
+c)  Fit a regression model of balance vs the other five variables (model
+    M1). Compute the VIF statistics for each x-variable and analyze
+    whether there is a problem of multicollinearity.
+
+```{r}
+fullfit <- lm(Balance ~ Age+Education+Income+HomeVal+Wealth, data=css)
+summary(fullfit)
+```
+
+With above fit, Model 1: Balance=
+(-1.071e+04)+(3.187e+02)Age+(6.219e+02)Education+(1.463e-01)Income+(9.183e-03)HomeVal+(7.433e-02)Wealth+e
+
+VIF Statistics
+
+```{r}
+library(car)
+vif(fullfit)
+
+```
+
+From above tabular data, we observe that there is multicollinearity
+problem with wealth and income. Wealth and Income is highly co-linear
+with other variables as covariant \>= 10. Wealth has covariant 10.714276
+and Income has 14.901724.
+
+d)  Apply your knowledge of regression analysis to define a better model
+    M2, and answer the following questions: • Analyze the Coefficient of
+    Determination R2 values and the adjusted adj-R2 values for both
+    models M1 and M2. Which model has the largest adj-R2 value?
+
+Lets first try removing the multicollinearity covariant:
+
+```{r}
+fullfit_2 <- lm(Balance ~ Age+Education+HomeVal, data=css)
+summary(fullfit_2)
+```
+
+Here, we observe that the R-squared got lowered down to 0.6731 and
+adjusted-R2 lowered to 0.6631. Hence, we can say model 1 is better
+model. Model 2: Balance=
+(-1.933e+04)+(7.194e+02)Age+(3.056e+02)Education+(1.380e-01)HomeVal+e
+
+Now, lets try removing the non significant values x values.
+
+```{r}
+fullfit_3 <- lm(Balance ~ Age+Income+Wealth+Education, data=css)
+summary(fullfit_3)
+```
+
+Here, we observe that R2 and adj-R2 are nearly same but Model 3 has
+slightly greater value than model 1. Hence, model 3 is better. Balance=
+(-1.243e+04)+(3.251e+02)Age+(6.219e+02)Education+(7.734e+02)Income+(7.299e-02)Wealth+e
+
+-Create residual plots (standardized residuals vs predicted;
+standardized residuals vs x-variables; and normal plot of residuals).
+Analyze the residual plots to check if the regression model assumptions
+are met by the data.
+
+Residuals vs fitted values plot for model 1
+
+```{r}
+plot( fitted(fullfit_3), residuals(fullfit_3), main="Predicted vs residuals plot")
+abline(a=0, b=0, col='red')
+
+```
+
+From above figure we can say points are randomly scattred around the
+zero line.
+
+standardized residuals vs x-variables plot for x-variables
+
+```{r}
+plot( Age, residuals(fullfit_3), main="Predicted vs Age plot")
+abline(a=0, b=0, col='red')
+```
+
+Here we observe that,most of the data is on right side.
+
+```{r}
+plot( Income, residuals(fullfit_3), main="Predicted vs Income plot")
+abline(a=0, b=0, col='red')
+```
+
+From above figure we can say points are randomly scattred around the
+zero line.
+
+```{r}
+plot( Education, residuals(fullfit_3), main="Predicted vs Education plot")
+abline(a=0, b=0, col='red')
+```
+
+From above figure we can say points are randomly scattered around the
+zero line.
+
+```{r}
+plot( HomeVal, residuals(fullfit_3), main="Predicted vs Home values")
+abline(a=0, b=0, col='red')
+```
+
+From above figure we can say points are randomly scatter around the zero
+line.
+
+```{r}
+plot( Wealth, residuals(fullfit_3), main="Predicted vs Wealth plot")
+abline(a=0, b=0, col='red')
+```
+
+```{r}
+qqnorm(residuals(fullfit_3))
+qqline(residuals(fullfit_3), col = 2)
+```
+
+The above graph is normal plot of residuals gives us fairly linear graph
+so our normality assumptions are satisfied.
+
+-Analyze if there are any outliers and influential points for your
+model. If so, what are your recommendations? Lets find outliers i.e
+influential points.
+
+```{r}
+influence.measures(fullfit_3)
+plot(rstudent(fullfit_3)~hatvalues(fullfit_3)) 
+summary(influence.measures(fullfit_3))
+```
+
+Here, I observe that there are few outliers and influential points. My
+recommendation is that Examine each influential point individually and
+Remove an influential point and see if the model results change, or
+investigate if influential point is an error or typo.
+
+```{r}
+influencePlot(fullfit_3)
+```
+
+Observation 38 and 91 stands out as having a relatively high Studentized
+Residual (3.635668)and 3.935608 respectively, indicating a potential
+outlier. Also, 85 has cooks greater than 1which is 1.39662726 which
+shows potential outliers.
+
+-Compute the standardized coefficients and discuss which predictor has
+the strongest influence on balance?
+
+```{r}
+library(QuantPsyc)
+lm.beta(fullfit_3)
+```
+
+According to above data, we can say that wealth has highest influence on
+balance.
+
+e)  Use the fitted regression model from d) without removal of
+    influential points to predict the average bank balance for a
+    specific zip code area where there is a plan to open a new branch.
+    Census data in that area show the following values: median age is 34
+    years, median education is 13 years, median income is \$64,000,
+    median home value is \$140,000, median wealth is 160,000. (Note that
+    you may not need all these values in your model). Provide predicted
+    average bank balance and 95% confidence interval for your estimate.
+
+```{r}
+new=data.frame(Age=c(34),Education=c(13),Income=(64000),HomeVal=c(140000),Wealth=c(160000))
+predict(fullfit_3, new, interval="prediction", level=0.95) 
+               
+               
+```
+
+Here we can say that predicted average balance is 30575.74 while the 95%
+CI interval is (26446.1,34705.38)
+
+# Problem 2
+
+```{r}
+css_1=read.table("pgatour2006_small.csv", header=T, sep=",")
+Name=css_1[,1]
+PrizeMoney=css_1[,2]
+DrivingAccuracy=css_1[,3]
+GIR=css_1[,4]
+PuttingAverage=css_1[,5]
+BirdieConversion=css_1[,6]
+PuttsPerRound=css_1[,7]
+
+```
+
+a)  Create scatterplots to visualize the associations between PrizeMoney
+    and the other five variables. Discuss the patterns displayed by the
+    scatterplot. Do the associations appear to be linear?
+
+```{r}
+plot(PrizeMoney,DrivingAccuracy, main="Scatterplot of Prize money vs Driving Accuracy")
+```
+
+From above plot, we can observe that association between Prize money and
+Driving Accuracy the data is not linearly associated.
+
+```{r}
+plot(PrizeMoney,GIR, main="Scatterplot of Prize money vs GIR")
+```
+
+From above plot, we can observe that association between Prize money and
+GIR the data is not linearly associated.
+
+```{r}
+plot(PrizeMoney,PuttingAverage, main="Scatterplot of Prize money vs Putting Average")
+```
+
+From above plot, we can observe that association between Prize money and
+Putting Average the data is not linearly associated.
+
+```{r}
+plot(PrizeMoney,BirdieConversion, main="Scatterplot of Prize money vs Birdie Conversion")
+```
+
+From above plot, we can observe that association between Prize money and
+Birdie conversion the data is not linearly associated.
+
+```{r}
+plot(PrizeMoney,PuttsPerRound, main="Scatterplot of Prize money vs Putts Per Round")
+```
+
+From above plot, we can observe that association between Prize money and
+PuttsPerRound the data is not linearly associated.
+
+So we can say that, the association of Price Money with other five
+variables is not linear.
+
+b)  Analyze distribution of PrizeMoney, and discuss if the distribution
+    is symmetric or skewed.
+
+```{r}
+hist(PrizeMoney, xlab="Prize Money", prob=TRUE, main="Histogram") 
+library(psych)
+describe(PrizeMoney)
+```
+
+Here from the figure we observe that, most of the data is in the left
+side of the graph so we can say that distribution is right skewed. Other
+than that here, mean is greater than median which also supports that
+data distribution is right skewed.
+
+c)  Apply a log transformation to PrizeMoney and compute the new
+    variable ln_Prize=log(PrizeMoney). Analyze distribution of ln_Prize,
+    and discuss if the distribution is symmetric or skewed.
+
+```{r}
+hist(log(PrizeMoney), xlab="Prize Money", prob=TRUE, main="Histogram") 
+library(psych)
+describe(log(PrizeMoney))
+```
+
+After applying log transformation, we can see that the data distribution
+is approximately symmetric and normal.While here, mean and median are
+nearly same which supports that the distribution is symmetric.
+
+d)  Fit a regression model of ln_Prize using the remaining predictors in
+    your dataset. Apply your knowledge of regression analysis to define
+    a valid model to predict ln_Prize. Hint: use scatter plots and
+    correlation
+
+```{r}
+coln<-css_1[,2:7]
+cor(coln,method='pearson')
+```
+
+```{r}
+fullpga <- lm(log(PrizeMoney) ~ DrivingAccuracy+GIR+PuttingAverage+BirdieConversion+PuttsPerRound, data=css_1)
+summary(fullpga)
+```
+
+Above is a model design including all variables. Model_1:
+log(PrizeMoney)=0.466245+(0.004063)DrivingAccuracy+(0.257773)GIR+(11.745503)PuttingAverage+(0.175061)BirdieConversion-(1.133206)PuttsPerRound+e
+Here,we got R-squared: 0.5264, Adjusted R-squared: 0.5108
+
+```{r}
+vif(fullpga)
+```
+
+Here we can see all are \<10 so there is no multicollinearity problem.
+
+-If necessary remove not significant variables. Remember to remove one
+variable at a time (variable with largest p-value is removed first) and
+refit the model, until all variables are significant.
+
+Lets remove non significant variables
+
+```{r}
+newfullpga <- lm(log(PrizeMoney) ~ GIR+BirdieConversion+PuttsPerRound, data=css_1)
+summary(newfullpga)
+```
+
+Here we removed the non-significant variables and refit the model and
+the model we got is: log(PrizeMoney)=11.78325+0.23571 (GIR)+0.11702
+(BirdieConversion)-0.68946(PuttsPerRound )+e
+
+Here we got R-squared: 0.5161, Adjusted R-squared: 0.5034. We can see
+first model was better than this.
+
+Analyze residual plots to check if the regression model is valid for
+your data.
+
+```{r}
+plot( fitted(fullpga), residuals(fullpga), main="Predicted vs residuals plot")
+abline(a=0, b=0, col='red')
+```
+
+The graph describes that, data is randomly scattered.
+
+```{r}
+plot( DrivingAccuracy, residuals(fullpga), main="Predicted vs Driving Accuracy plot")
+abline(a=0, b=0, col='red')
+
+```
+
+```{r}
+plot( GIR, residuals(fullpga), main="Predicted vs GIR plot")
+abline(a=0, b=0, col='red')
+```
+
+```{r}
+plot( PuttingAverage, residuals(fullpga), main="Predicted vs Putting Average plot")
+abline(a=0, b=0, col='red')
+```
+
+```{r}
+plot( BirdieConversion, residuals(fullpga), main="Predicted vs Birdie Conversion plot")
+abline(a=0, b=0, col='red')
+```
+
+```{r}
+plot( PuttsPerRound, residuals(fullpga), main="Predicted vs PuttsPerRound")
+abline(a=0, b=0, col='red')
+```
+
+From the residual vs fitted and the residuals vs all the x-values we
+observe that the distribution is random and scattered.
+
+```{r}
+qqnorm(residuals(fullpga))
+qqline(residuals(fullpga), col = 2)
+
+```
+
+Hence, random distribution gives us fairly linear points in plot . Hence
+assumption of normality satisfied.
+
+-Analyze if there are any outliers and influential points. If there are
+points in the dataset that need to be investigated, give one or more
+reason to support each point chosen.
+
+```{r}
+influence.measures(fullpga)
+plot(rstudent(fullpga)~hatvalues(fullpga)) 
+summary(influence.measures(fullpga))
+```
+
+Observing above graph we can say there is only one outlier.Influential
+points can have a significant impact on the regression model's
+parameters and predictions. These points may be outliers in the dataset,
+having extreme values for some predictors.They may represent cases that
+deviate from the overall pattern observed in the data. I choose one
+point as an outlier as it was High Deleted Studentized Residuals
+(outside (-3,3) band).Other than that if the point has High leverage hat
+hii value (\> 0.5) or High Cook's D distance (\>1) than that is
+considered as outlier or influential point.
+
+```{r}
+influencePlot(fullpga)
+```
+
+e)  Interpret the regression coefficients in the final model to answer
+    the following question: How does an increase in 1% for GIR affect
+    the average Prize money?
+
+```{r}
+coef(fullpga)["GIR"]
+exp(coef(fullpga)["GIR"])
+
+```
+
+Here, coefficient estimate for GIR is 0.2577731. This represents the
+change in Prize Money when we make change of one unit increase in
+predictor variable, when all the other variables are constant. So, 1%
+change in GIR will make 1.294045 change to Prize Money
+
+f)  Compute the prediction and 95% prediction interval for average prize
+    money for a player that has a GIR of 67%, driving accuracy of 64%,
+    putting average of 1.77, Birdie Conversion of 28% and 29.16 average
+    putts per round.
+
+```{r}
+new=data.frame(DrivingAccuracy=c(64),GIR=c(67),BirdieConversion=c(28),PuttingAverage=c(1.77),PuttsPerRound=c(29.16))
+predict(fullpga, new, interval="prediction", level=0.95) 
+               
+```
+
+```{r}
+exp(predict(fullpga, new, interval="prediction", level=0.95) )
+```
+
+This model prediction for a player that has a GIR of 67%, driving
+accuracy of 64%, putting average of 1.77, Birdie Conversion of 28% and
+29.16 average putts per round gives 95% prediction interval
+(10741.53,163764.2) and average Price money 41941.37.

@@ -1,0 +1,315 @@
+---
+title: "Assignment4"
+output: html_document
+date: "2023-11-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1
+
+```{r}
+
+churn_data <- read.csv("churn_train.csv", header = TRUE, sep = ",")
+head(churn_data)
+yvar=churn_data[,8]
+```
+
+```{r}
+summary(churn_data)
+```
+
+```{r}
+#Converting Target variable to factor
+churn_data$CHURN <- factor(churn_data$CHURN, levels = c(0, 1), labels = c("No", "Yes"))
+str(churn_data)
+```
+
+a)  Create two boxplots to analyze the observed values of age and PCT_CHNG_BILL_AMT by churn value. Analyze the boxplots and discuss how customer age and changes in bill amount affect churn probabilities. [1 pt for R code for boxplots, 1 pt for analysis = 2 pts]
+
+```{r}
+
+boxplot(churn_data$AGE~churn_data$CHURN,ylab = "Age")
+```
+The "No" data is distributed with a median age around 40, indicated by the line inside the box.The box, representing the interquartile range (IQR), shows that the middle 50% of the data falls roughly between the early 30s and the slightly over 50s.There do not appear to be any outliers beyond the whiskers, suggesting that most individuals' ages fall within a relatively expected range.The median age of "Yes" data is lower, closer to the 20s.The IQR is narrower, indicating that the middle 50% of ages in this group is more concentrated around the median.
+
+
+```{r}
+boxplot(churn_data$PCT_CHNG_BILL_AMT~churn_data$CHURN,ylab = "PCT_CHNG_BILL_AMT")
+```
+ Both groups have a similar median (around 1.0), but the "No" group has more variability with several higher outliers. The "Yes" group appears more uniform with fewer outliers.
+
+
+
+b)  Fit a logistic regression model to predict the churn probability using the data in the dataset (Churn is the response variable and the remaining variables are the independent x-variables). Remove x-variables that are not significant using alpha=0.05. Write down the expression of the fitted model. (HINT: probability of interest is p = pr(churn = 1)
+
+```{r}
+library(car)
+model_1 <- glm(CHURN ~ ., family = binomial(link = "logit"), data = churn_data)
+summary(model_1)
+```
+Removing non significant variables.
+```{r}
+significant_model<-step(model_1,direction="backward")
+```
+Here we applied step function inorder to find best model. we got CHURN ~ TOT_ACTV_SRV_CNT + AGE + PCT_CHNG_IB_SMS_CNT + PCT_CHNG_BILL_AMT + COMPLAINT this model as best AIC value of 732.87 which is lowest of all. It still has one non-significant variable, i tried removing it but does make much difference and it also increases the AIC value so i moved with the model with AIC 732.87. 
+
+```{r}
+summary(significant_model)
+```
+
+The expression for regression model is 
+CHURN ~ β0+β1×TOT_ACTV_SRV_CNT +β2× AGE +β3× PCT_CHNG_IB_SMS_CNT + β4×PCT_CHNG_BILL_AMT + β5×COMPLAINT+ϵ
+CHURN = 7.11401  -0.54892TOT_ACTV_SRV_CNT  -0.17781AGE  -0.41230PCT_CHNG_IB_SMS_CNT  -0.39914PCT_CHNG_BILL_AMT + 0.50489*COMPLAINT
+Non significant x-variables are:GENDER,EDUCATION , LAST_PRICE_PLAN_CHNG_DAY_CNT , PCT_CHNG_BILL_AMT 
+
+
+c)  Analyze the final logistic regression model and discuss the effect of each variable on the churn probability. Discuss results in terms of odds ratios.
+
+```{r}
+model_2 <- glm(CHURN ~ TOT_ACTV_SRV_CNT + AGE + PCT_CHNG_IB_SMS_CNT + PCT_CHNG_BILL_AMT + 
+    COMPLAINT, family = binomial(link = "logit"), data = churn_data)
+summary(model_2)
+```
+Expression: CHURN = 7.11401 + -0.54892TOT_ACTV_SRV_CNT + -0.17781AGE + -0.41230PCT_CHNG_IB_SMS_CNT + -0.39914PCT_CHNG_BILL_AMT + 0.50489*COMPLAINT
+```{r}
+library(car)
+library(carData)
+library(lmtest) 
+lrtest(model_2)
+```
+
+```{r}
+#plot of residuals vs churn number
+plot(residuals(model_2, type="deviance"))
+abline(a=0, b=0)
+```
+The residuals appear to be randomly scattered around the horizontal line at zero, without any clear systematic pattern. This randomness is a good sign, indicating that the model does not suffer from obvious non-linearity issues.There are no apparent trends or curves in the plot, which suggests that the model's predictions are not biased in a systematic way across the range of predictions.There are a few points with relatively high positive and negative residuals. The spread of the residuals seems to be relatively constant across the range of indices. However, there might be a slight increase in variability in the residuals for higher index values. This could suggest potential heteroscedasticity, which would violate one of the assumptions of logistic regression.
+```{r}
+#coefficients 
+print(coef(model_2))
+#odds ratio
+odds_ratios <- exp(coef(model_2))
+print(odds_ratios)
+#Confidence interval
+confint_final_model <- exp(confint(model_2))
+print(confint_final_model)
+```
+The odds ratio for the intercept is quite large at approximately 1229.07, but without context, it's hard to interpret. The confidence interval is very wide (from about 445.71 to 3640.14), indicating a high degree of uncertainty in this estimate, whereas narrower intervals for other variables like AGE and TOT_ACTV_SRV_CNT imply more precise estimates.This is the dataframe of the interpretation of odds ratio of each variable and odds ratio for complaint  is  1.6567979 which is greater than 1 which increase in the odds of the event occurring (churn). 
+
+
+d)  Compute the predicted churn probability and the prediction interval for a male customer who is 43 years old, and has the following information LAST_PRICE_PLAN_CHNG_DAY_CNT=0, TOT_ACTV_SRV_CN=4, PCT_CHNG_IB_SMS_CNT= 1.04, PCT_CHNG_BILL_AMT= 1.19, and COMPLAINT =1.
+
+```{r}
+new_data <- data.frame( TOT_ACTV_SRV_CNT = 4,AGE = 43, PCT_CHNG_IB_SMS_CNT = 1.04,PCT_CHNG_BILL_AMT = 1.19,COMPLAINT = 1)
+
+# Calculate the predicted probability
+predicted_prob <- predict(model_2, newdata = new_data, type = "response", se.fit=T)
+print(predicted_prob)
+
+```
+The predicted probability is 0.04202857. 
+```{r}
+predicted_log_odds <- predict(model_2, newdata = new_data, type = "link", se = TRUE)
+
+# Calculate confidence intervals on the log-odds scale
+ci_log_odds <- with(predicted_log_odds, 
+                    fit + c(-1, 1) * qnorm(0.975) * se.fit)
+
+# Transform the log-odds confidence intervals to probabilities
+ci_prob <- plogis(ci_log_odds)
+
+# Create a named vector for the confidence interval
+ci_prob_named <- setNames(ci_prob, c("lower", "upper"))
+
+# Print the confidence intervals for the predicted probabilities
+print(ci_prob_named)
+```
+The confidence interval is for lower is  0.02606549 and 0.06709433 is for upper boundary.
+
+
+e)  The dataset churn_test.csv contains a new set of customers, and can be used to test the validity of the churn predictive model. Apply the methods discussed in week 8 lecture to identify a threshold T for the predicted churn probability in order to define a classification rule for customers, so that
+
+-   predicted probability p(churn) \> = T, then customer is a "likely churn", and
+-   predicted probability p(churn) \< T, then customer is a "unlikely churn". Compute the optimal T value, and create the classification matrix summarizing classification results. Hint: You can use the Classify_functions.R in your solution. [1 pt for R code for getting range of thresholds to choose optimal T, 1 pt for computing predicted churn outcomes corresponding to predicted probabilities, 1 pt for computing confusion matrix and metrics, 1 pt for selecting the P\* that optimizes a certain metric, 1 pt for computing predicted churn outcomes for a separate testing set (churn_test.csv), 1 pt for computing the confusion matrix that summarizes classification results and metrics = 6 pts]
+
+```{r}
+churn_test <- read.csv("churn_test.csv", header = TRUE, sep = ",")
+head(churn_test)
+
+
+```
+```{r}
+churn_test$CHURN = as.factor(churn_test$CHURN)
+str(churn_test)
+
+```
+
+```{r}
+summary(churn_test)
+```
+
+
+```{r}
+library(pROC)
+test_predicted_prob <- predict(model_2, newdata = churn_test, type = "response")
+roc_curve <- roc(churn_test$CHURN, test_predicted_prob)
+plot(roc_curve, main = "ROC Curve", col = "green")
+
+```
+
+```{r}
+optimal_threshold <- coords(roc_curve, "best", ret = "threshold")$threshold
+optimal_threshold
+```
+This is the threshold we got after analyzing the ROC curve.
+```{r}
+predict_classes <- ifelse(test_predicted_prob >= optimal_threshold, "likely churn", "unlikely churn")
+```
+
+```{r}
+conf_matrix <- table(churn_test$CHURN, predict_classes)
+conf_matrix
+```
+
+```{r}
+# Used the Classify_functions.R from Week 8
+source("Classify_functions.R")
+```
+
+```{r}
+sensitivity(conf_matrix)
+specificity(conf_matrix)
+accuracy(conf_matrix)
+precision(conf_matrix)
+recall(conf_matrix)
+```
+The model demonstrates low sensitivity and specificity, indicating poor performance in correctly identifying positive and negative cases, respectively. The overall accuracy and precision are also low, suggesting the model is ineffective at predicting correctly and often misclassifies instances.
+
+# Problem 2
+
+a)  Create a scatterplot of ENERGY (y) versus TEMPD (x) to visualize the association between the two variables. Analyze the association displayed by the scatterplot.
+
+```{r}
+energydata=read.table("energytemp.txt", header=T, sep="\t")
+names(energydata)
+str(energydata)
+
+#Splitting the coloumns
+library(tidyr)
+energydata <- tidyr::separate(energydata, col = energy..temp, into = c("energy", "temp"), sep = "  ")
+
+# Convert the new columns to integers
+energydata$energy <- as.integer(energydata$energy)
+energydata$temp <- as.integer(energydata$temp)
+
+# Check the structure of the modified data frame
+str(energydata)
+```
+
+
+
+```{r}
+plot(energydata$energy,energydata$temp, main="Scatterplot of Energy vs Temp")
+```
+
+The scatter of points suggests that there is a positive relationship between energy consumption and temperature. As energy consumption increases, the temperature also seems to increase.There are several clusters of points, especially noticeable in the lower range of energy consumption.There are a few points that stand out from the main cluster, particularly at higher energy consumptions. These could be outliers or could indicate a less consistent relationship at higher levels of energy consumption.: The overall trend could be described as linear, although with some degree of scatter. 
+
+```{r}
+cor(energydata$energy,energydata$temp)
+```
+
+Correlation value of energy and temp is 0.87 which says they are strongly correlated.
+
+b)  Fit a cubic model (HINT: create two new variables TEMP2 and TEMP3: In R use the code: tempd2 = tempd\^2; tempd3 = tempd\^3; Include the new variables in the regression model) 
+
+```{r}
+
+energydata$temp2 <- energydata$temp^2
+energydata$temp3 <- energydata$temp^3
+
+# Fit the cubic regression model
+energy_model <- lm(energydata$energy ~ temp + temp2 + temp3, data = energydata)
+
+# Output the summary of the model
+summary(energy_model)
+
+```
+
+c)  Are all variables in the model significant?
+
+```{r}
+energy_model_summary <- summary(energy_model)
+coeff_table <- energy_model_summary$coefficients
+
+# Print the p-values
+ p_values <- coeff_table[-1, "Pr(>|t|)"]>0.05
+ print(p_values)
+```
+No,there are no non-significant variables in this model. All the variables are significant.
+
+
+d)  Create the residual plots (residuals vs predicted; residuals vs x variable; and normal plot of residuals). Analyze residual plots to evaluate the normality and constant variance assumptions. Discuss your findings
+
+```{r}
+plot( fitted(energy_model), residuals(energy_model), main="Predicted vs residuals plot")
+abline(a=0, b=0, col='red')
+```
+In this plot, the residuals do not appear to have a clear pattern, which is a good sign. They are relatively evenly spread across the range of predictions.There are some points with a high residual value, especially one that stands out with a residual above 20. These could be outliers or influential points that may disproportionately affect the regression model's fit.The lack of pattern suggests that the linear model may be appropriate for the data, but the potential heteroscedasticity might need to be addressed, possibly with a different model or a transformation of variables.
+```{r}
+plot( energydata$temp, residuals(energy_model), main="Temp vs residuals plot")
+abline(a=0, b=0, col='red')
+
+
+```
+
+The residuals are relatively scattered around the horizontal line without a clear pattern, which generally suggests that the model does not have systematic errors in prediction across the range of temperatures. There are a few residuals with large magnitudes (both positive and negative), indicating points that the model did not predict accurately. The variance is relatively constant, which is a good indication. However, the cluster of points at the higher temperature values seems to have larger residuals, which might indicate potential issues with variance at higher temperatures.
+
+```{r}
+plot( energydata$temp2, residuals(energy_model), main="Temp2 vs residuals plot")
+abline(a=0, b=0, col='red')
+
+```
+
+```{r}
+plot( energydata$temp3, residuals(energy_model), main="Temp3 vs residuals plot")
+abline(a=0, b=0, col='red')
+
+```
+
+```{r}
+qqnorm(residuals(energy_model))
+qqline(residuals(energy_model), col = 2)
+```
+ The points on this plot follow nearly a straight line. It shows normality of residuals.
+e)  If you are satisfied with the fitted regression model, write down its expression.
+
+Answer: energy=β0+β1×temp+β2×temp^2+β3×temp^3+ϵ
+
+```{r}
+model_coefficients <- coef(energy_model)
+
+# Construct the model expression
+model_expression <- paste("energy = ", 
+                          round(model_coefficients[1], 2), 
+                          " + ", round(model_coefficients[2], 2), "*temp", 
+                          " + ", round(model_coefficients[3], 2), "*temp^2",
+                          " + ", round(model_coefficients[4], 2), "*temp^3")
+
+# Print the model expression
+print(model_expression)
+```
+Expression:
+energy =  -17.04  +  24.52 *temp  +  -1.49 *temp^2  +  0.03 *temp^3
+
+f)  Use the fitted regression model to predict the average energy consumption for an average difference in temperature equal to TEMPD=10. (HINT: In R use the following code: new \<- data.frame(tempd=c(10), tempd2=c(100), tempd3=c(1000)) then use the predict() function with the fitted regression model as explained in the document under week 5.
+
+```{r}
+#Prediction
+energy_new_data <- data.frame(temp=c(10), temp2=c(100), temp3=c(1000))
+predicted_energy <- predict(energy_model, newdata = energy_new_data)
+print(predicted_energy)
+```
+The predicted energy is 108.4787 .

@@ -1,0 +1,359 @@
+---
+title: "ASSIGNMENT3"
+output: html_document
+date: "2023-10-31"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+college <- read.csv2("college.csv", header = TRUE, sep = ",")
+summary(college)
+```
+
+```{r}
+college$Accept.pct = as.numeric(college$Accept.pct)
+college$S.F.Ratio = as.numeric(college$S.F.Ratio)
+```
+
+# Problem 1
+
+Apply regression analysis techniques to analyze the relationship among
+the observed variables and build a model to predict Graduation Rates
+(Grad.Rate). Answer the following questions:
+
+a)  Analyze the distribution of Grad.Rate and discuss if the
+    distribution is symmetric, or if you need to apply any
+    transformation. [
+
+```{r}
+hist(college$Grad.Rate, xlab="Distribution of Graduation rates", prob=TRUE, main="Histogram")
+```
+
+Observing above histogram we can say that data is normally distributed
+so no need of transformation.
+
+b)  Create scatterplots for Grad.Rate vs each of the independent
+    variables. What conclusions can you draw about the relationships
+    between Grad.Rate and the independent variables? (No need to include
+    the scatterplots in your submission, but you can use correlation
+    analysis)
+
+```{r}
+correlation = cor(college[ ,sapply(college,is.numeric)])
+correlation["Grad.Rate", ]
+```
+
+Here we observe that, Elite10,Outstate, Room.Board,Books, PHD, Terminal.
+perc.alumni, expend are positively correlated with Grad.Rate while
+others are negatively correlated i.e. F.Undergrad , P.Undergrad and
+Personal. Outstate and Grad.Rate are postively strongly correlated out
+of all.
+
+c)  Build boxplots to evaluate if graduation rates vary by university
+    type (private vs public) and by status (elite vs not elite). Discuss
+    your findings
+
+```{r}
+ggplot(college, aes(x = Private, y = Grad.Rate)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(x = "University Type", y = "Graduation Rate") +
+  ggtitle("Graduation Rates by University Type")
+```
+
+The garduation rate is more in private as comapared to non-compared. The
+universities with yes exhibits its median upper 60's with notable
+numbere of outliers. However, universities with no has its median in
+lower 60's while and less number of outliers.
+
+```{r}
+ggplot(college, aes(x = as.factor(Elite10), y = Grad.Rate)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(title = "Graduation Rates by Elite Status",
+       x = "Elite Status",
+       y = "Graduation Rate")
+```
+
+The graduation rate of elite universities is high with around 90% of
+median tight IQR. While, non-elite schools have median rate of 70% with
+border IQR suggesting more variation. Outliers in this group hint at a
+few institutions with substantially lower graduation rates.
+
+d)  Fit a full model (with all independent variables) to predict
+    Grad.Rate
+
+```{r}
+
+data = college[ , -which(names(college) == "school")]
+
+
+```
+
+```{r}
+
+college_fit <- lm(Grad.Rate ~ ., data)
+summary(college_fit)
+```
+
+About 44.48% variation is shown in graduation rates by the model. The
+Adjusted R-squared is 43.46% which is slightly lower. The model is said
+to be statistically significant with F-statistics of 43.61 and low
+p-value suggest that at least one predictor is significantly affecting
+the grad rate.
+
+e)  Does multi-collinearity seem to be a problem here? What is your
+    evidence? Compute and analyze the VIF statistics.
+
+```{r}
+library(car)
+stat<- vif(college_fit)
+stat
+```
+
+There is no multicollinearity seen from the statistics as all the value
+is \<5 which is not a problem. This suggests that the regression
+coefficients are reliable, and the model is well-suited for
+understanding the factors influencing graduation rates.
+
+f)  Apply TWO variable selection procedures to find an optimal subset of
+    independent variables to predict Grad.Rate. You can choose any two
+    procedures among the ones we learned in class: backward selection,
+    forward selection, adj-R2 , Cp, stepwise, press.
+
+```{r}
+step(college_fit, direction = "backward")
+```
+
+```{r}
+base = lm(Grad.Rate ~ 1, data = data)
+step(base , scope = list(upper = college_fit,lower = ~1),direction = "forward")
+```
+
+From the above Two variable selection procedures(Backward and Forward),
+the minimum step AIC from both the procedure is AIC=3987.16.
+
+g)  Fit a final regression model M1 for Grad.Rate based on the results
+    in f). Explain your choice. Write down the expression of the
+    estimated model M1
+
+```{r}
+M1 = lm(Grad.Rate ~ Outstate + perc.alumni + Accept.pct + 
+    P.Undergrad + F.Undergrad + Room.Board + Expend + Personal + 
+    Private + PhD + Elite10, data = data)
+summary(M1)
+```
+
+Choose this model based on AIC value, I have choosed this model, as it
+AIC value was minimum. Expression:
+
+Grad.Rate \~ 4.840e+01 + 1.215e-03Outstate + 3.060e-01perc.alumni +
+-1.778e+01Accept.pct + -1.963e-03P.Undergrad + F.UndergradF.Undergrad +
+1.534e-03Room.Board + -4.465e-04Expend + -1.820e-03Personal +
+4.770e+00Private + 8.424e-02PhD + 4.022e+00 \*Elite10
+
+h)  Draw a scatter plot of the studentized residuals against the
+    predicted values. Does the plot show any striking pattern indicating
+    problems in the regression analysis?
+
+```{r}
+plot( fitted(M1), rstudent(M1), main="Predicted vs residuals plot")
+abline(a=0, b=0, col='red')
+```
+
+The residuals are mostly centered towards zero line and are randomly
+scattered. There are few potential outliers nearing or beyond values of
+3 and -3 are noticeable but overall we can see a linear realtionship.
+
+i)  Analyze normal probability plot of residuals. Is there any evidence
+    that the assumption of normality is not satisfied?
+
+```{r}
+qqnorm(rstudent(M1))
+qqline(rstudent(M1), col = 2)
+```
+
+Here, we observe that majority of residuals are normally distributed,
+the deviation tails suggests that certain observations has significantly
+larger errors.
+
+j)  Are there any outliers or Influential Points? Compute appropriate
+    statistics
+
+```{r}
+influencePlot(M1)
+```
+
+Yes there are outliers.Points 96 and 378 are outliers, as indicated by
+their high Studentized Residuals.
+
+k)  Analyze the R2 value for the final model and discuss how
+    welsummary(M1)\$r.squaredl the model explains the variation in
+    graduation rates among the universities.
+
+```{r}
+summary(M1)$r.squared
+
+```
+
+The R2 value for the final model fitted for Grad.Rate is 0.4431. This
+means that the predictors in the model can explain approximately 44.31%
+of the variation in graduation rates across universities. The remaining
+55.69% of variation is due to factors not accounted for in the model or
+to inherent variability.
+
+l)  Draw conclusions on graduation rates based on your regression
+    analysis. What are the most important predictors in your model? Does
+    your model show a significant difference in graduation rates between
+    private and public universities? Do "elite" universities have higher
+    graduation rates?
+
+Based on the regression analysis:
+
+Most Important Predictors: - Significant predictors in the model include
+"Outstate" , "perc.alumni" , "Accept.pct" , "P.Undergrad" and
+"F.Undergrad" , and "Expend" . These factors notable influence on Grad
+Rates. Factors with larger coefficients have stronger effects.
+
+Difference Between Private and Public Universities: - Yes, there is a
+statistical difference in graduation rates between public and
+private.The positive coefficients shows that private have higher
+influence than public ones. The p-value is also much smaller than 0.05.
+
+Impact of "Elite" Universities: - The model indicates that "elite"
+universities do have higher graduation rates compared to non-elite
+universities. The positive coefficient of "Elite10Elite" supports this
+conclusion, implying that elite institutions generally achieve better
+graduation outcomes.
+
+Conclusion: The analysis says that the significance of outstate, alumni,
+accept,pct, institutional type(public or private) and whether it is
+elite or not. Graduation rates are impacted by both private or elite
+status, showing that the institution has more favorable resources which
+supports graduation rate. However, the moderate R2 value indicates there
+are other unaccounted factors which affects the graduation date which
+model is not able to capture.
+
+# Problem 2
+
+a)  You are asked to build a new regression model that includes the
+    following independent variables: Elite10, Accept .pct, Outstate,
+    perc.alumni and Expend, together with the interaction effects of
+    elite10 with each independent variable. Fit the model and analyze if
+    the interaction terms are significant.
+
+```{r}
+M2 <- lm(Grad.Rate ~ Elite10 + Accept.pct + Outstate + perc.alumni + Expend +
+                 Elite10:Accept.pct + Elite10:Outstate + 
+                 Elite10:perc.alumni + Elite10:Expend, data = data)
+summary(M2)
+```
+
+Here the regression model, including interaction terms, reveals that
+about 42.34% of the variation in graduation rates among universities is
+explained by factors such as Elite10, Accept.pct, Outstate, perc.alumni,
+and Expend, along with their interactions with Elite10. The model is
+statistically significant.
+
+b)  Simplify the model and remove interaction terms and additive terms
+    that are not significant. Remember that additive terms included in
+    interaction terms should not be removed. Write down the expression
+    of the final model M2.
+
+```{r}
+step(M2, direction = "backward")
+```
+
+```{r}
+M2_fit = lm(Grad.Rate ~ Elite10 + Accept.pct + Outstate + perc.alumni + 
+    Expend + Elite10:Accept.pct + Elite10:Outstate + Elite10:Expend, 
+    data = data)
+summary(M2_fit)
+```
+
+Model(expression):
+
+Grad.Rate = 5.314e+01+ 3.585e+01Elite10 -1.505e+01Accept.pct +
+2.322e-03Outstate + 3.334e-01perc.alumni -9.506e-04Expend
+-2.164e+01Elite10:Accept.pct -2.253e-03Elite10:Outstate +
+1.057e-03Elite10:Expend+e
+
+c)  Analyze the parameter estimates of the fitted model and discuss how
+    being an "Elite10" University affects the relationship between
+    Graduation Rates and the four predictors Accept.pct, Outstate,
+    perc.alumni and Expend.
+
+```{r}
+summary(M2_fit)$coefficients[ ,"Estimate"]
+```
+
+Graduation rates are affected differently by certain factors when a
+university is ranked among the Elite10.
+
+Here we observe that,the negative impact of a higher acceptance rate on
+graduation rates is more pronounced in elite universities
+Elite10:Accept.pct= -2.163809e+01 . Elite10:Outstate=-2.253419e-03 Elite
+universities have less of a positive impact on graduation rates from
+higher out-of-state tuition. Elite10:Expend=1.057323e-03 Compared to
+non-elite universities, elite universities benefit from higher spending
+per student in terms of graduation rates.
+
+\# OPTIONAL: Cross-validation
+
+d)  Apply cross-validation techniques (5-fold cross validation or divide
+    dataset into a training and a testing set) to compute how well your
+    final model M1 in Part 1 predicts new data. Compute the MAPE (mean
+    absolute percentage error) statistic and discuss the results.
+
+```{r}
+library(caret)
+set.seed(123)
+ctrl <- trainControl(method = "cv", number = 5)
+cv_M1 <- train(formula(M1), data = data, method = "lm", trControl = ctrl)
+summary(cv_M1)
+```
+
+```{r}
+mape <- function(actual, predicted) {
+  mean(abs((actual - predicted) / actual)) * 100
+}
+```
+
+```{r}
+mape_value <- mape(data$Grad.Rate, predict(cv_M1, newdata = data))
+mape_value
+```
+
+A MAPE of approximately 17.86% indicates that, on average, the model's
+predictions of graduation rates are off by 17.86% percentage from the
+actual values.
+
+e)  Apply the same cross-validation procedure and compute the MAPE
+    statistic for the interaction model M2 computed in Part 2. Compare
+    the predictive power of the models M1 and M2 fitted in Part 1 and
+    Part 2.
+
+```{r}
+cv_M2 <- train(formula(M2_fit), data = data, method = "lm", trControl = ctrl)
+summary(cv_M2)
+```
+
+```{r}
+mape_value2 <- mape(data$Grad.Rate, predict(cv_M2, newdata = data))
+mape_value2
+```
+
+A MAPE of approximately 18.57% indicates that, on average, the model's
+predictions of graduation rates are off by 18.57% percentage from the
+actual values.
+
+The model with the lower MAPE is considered to have better predictive
+power.Therefore Model 1 has better predictive power.

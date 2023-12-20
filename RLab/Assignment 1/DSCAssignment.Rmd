@@ -1,0 +1,315 @@
+---
+title: "DSC_Assignment1"
+output: html_document
+date: "2023-09-26"
+Author: "Shivangi Patel"
+ID : " 2111171"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+css=read.table("Banking.txt", header=T, sep="\t")
+Age=css[,1]
+Education=css[,2]
+Income=css[,3]
+Balance=css[,4]
+```
+
+# Question 1
+
+a)\
+Analyze the distribution of average account balance using histogram, and compute appropriate descriptive statistics.
+
+```{r}
+hist(css$Balance, xlab="Average Account Balance", prob=TRUE, main="Histogram")
+```
+
+Compute descriptive statistics
+
+```{r}
+summary(css$Balance)
+```
+
+Answer:The mean balance is around \$24888 which represents the arithmetic average of all account balances in dataset. It provides central tendency of distribution.The median balance is \$24661 which is very close to mean.It shows middle value of dataset when arranged in ascending order. As mean and median is almost similar shows roughly symmetric distribution or can be said as right skewed as mean is little greater than median. Here, minimum balance is \$5956 and maximum balance is 56569. IQR(InterQuartile Range) calculated using differences between 1st and 3rd quartile.The difference is around \$9144 approximately. The spread of account balances around median is moderate. The larger IQR shows wide spread of data. It can be seen that there are many outliers which can be removed further. Overall, the distribution of average account balances appears to be relatively symmetric or slightly right skewed.
+
+b)  Scatterplots to visualize the associations between bank balance and the other variables.
+
+```{r}
+plot(Balance,Age, main="Scatterplot of Age vs Account Balance")
+```
+
+From above scattered plot, we can observe that data is scattered and the association between both the variables are nearly linear with some outliers.
+
+```{r}
+plot(Balance,Education, main="Scatterplot of Eduction vs Account Balance")
+```
+
+From above graph, the association between balance and Education is liner with large amount of outliers.
+
+```{r}
+plot(Balance,Income, main="Scatterplot of Income vs Account Balance")
+```
+
+From above plot, we can say the association between Income and Balance is liner with less outliers.
+
+c)Correlation values of bank balance vs the other variables.
+
+```{r}
+cor(Balance,Age)
+```
+
+Balance and Age are correlated with the positive correlation values, i.e 0.565 that shows any change in age will affect Balance.
+
+```{r}
+cor(Balance,Education)
+```
+
+Balance and Education are correlated with the positive correlation values, i.e 0.554 that shows any change in Education will affects Balance.
+
+```{r}
+cor(Balance,Income)
+```
+
+Balance and Income are highly correlated with the positive correlation values, i.e 0.565 that shows any increase in Income will increase Balance as well.
+
+```{r}
+cor_values <- cor(css[,c("Balance", "Age", "Income", "Education")])
+cor_values
+```
+
+here, above is all the possible corelations.
+
+d)  What's the independent variable and what is the dependent variable in this regression analysis?
+
+Answer: Model Association between two variable a dependent variable Y (response variable) and Independent variables X1,X2,X3...etc that may affects changes in Y They are also called explanatory variables or predictors.Goal of the analysis is to predict future values of the target variable Y given values of the X-variables. Here, Age,Education and Income can be predictors i.e Independent variables while balance is dependent variable.
+
+e)Use R to fit a regression model to predict balance from age, education and income. Analyze the model parameters. Which predictors have a significant effect on balance?
+
+```{r}
+fit <- lm(Balance ~ Age+Education+Income, data=css)
+summary(fit)
+```
+
+The p-value of predictor age is less than alpha 0.05 that says it makes significant change to average account balance. While, education has p-value 0.3392 which is greater than alpha that means it that it does not have a significant effect on the average account balance. However, the p-value for Income is low as well i.e. 2e-16 indicating a highly significant effect on the average account balance. Thus, "Income" has a significant effect on the average account balance.
+
+f)If one of the predictors is not significant, remove it from the model and refit the new regression model. Write the expression of the fitted regression model.
+
+```{r}
+
+summary(fit)$coefficients[, "Pr(>|t|)"]>0.05
+new_model <- lm(Balance ~ Age+Income, data=css)
+summary(new_model) 
+expression=as.formula(new_model)
+expression
+```
+
+Here, Education has p-value greater than alpha which says it has no significant effect on average account balance. Hence removing it, above is the new fitted model. Expression is Balance \~ Age+Income
+
+g)  Interpret the value of the parameters for the variables in the model.
+
+```{r}
+summary(new_model)$coefficients[ ,"Estimate"]
+```
+
+Here, this shows the value of parameters in model\
+
+h.  Report the value for the R2 coefficient and describe what it indicates.
+
+```{r}
+square=summary(new_model)$r.squared
+square
+```
+
+Here, R-squared value i.e. 0.9217638 indicates 92.17% variance in the average account balance can be explained by the independent variables included in the model (age and income).\
+
+i)  According to census data, the population for a certain zip code area has median age equal to 34.8 years, median education equal to 12.5 years and median income equal to \$42,401. 1)Use the final model computed in point (f) to compute the predicted average balance for the zip code area.
+
+```{r}
+predict_data=data.frame(Age=34.8,Income=42401)
+predicted_balance <- predict(new_model, newdata = predict_data)
+as.numeric(predicted_balance)
+```
+
+The predicted balance is 22135.22
+
+```{r}
+observed_balance <- 21572
+prediction_error <- observed_balance - predicted_balance
+abs(prediction_error)
+```
+
+Here we found that the predicted balance is 22135.22 but observed balance is 21572. This gives us Prediction error of 563.2155
+
+j)  Conduct a global F-test for overall model adequacy. Write down the test hypotheses and test statistic and discuss conclusions.
+
+```{r}
+Ho = lm(Balance ~ 1, css)
+f_test = anova(Ho,new_model)
+f_test
+
+
+```
+
+Here, Ho represent null hypothesis which says that none of the predictor variable has significant change on Balance. The result of statistic is F_test=583.2 and p_value =2.2e-16 with alpha Alpha which is the significance level or the probability of rejecting a true null hypothesis in a statistical hypothesis test. In this, i determined that p_value i.e.2.2e-16 \<0.05. Hence, the null hypothesis is rejected as p-value is less than significant level. Rejection indicated that there is significant relationship with one or more variables and average account balance.\
+
+Summary: To conclude, on the basis of F-test we reject null hypothesis (Ho) as the response variable(balance) has a significant relationship with one or more predictor variable.
+
+# Question 2:
+
+1)  Define the dummy variables to include college (use Business as your baseline) in a regression model for starting salary Y
+
+Answer:Dummy variables are as under:\
+1) Xengineering\
+1 if College = Engineering, 0 Otherwise\
+2) Xliberal_Arts\
+1 if College = Liberal Arts, 0 Otherwise 3) Xnursing 1\
+if College = Nursing, 0 Otherwise\
+4) Xmale\
+1 if sex = Male and 0 if sex=Female\
+O captures business as baseline for college 0 captures Female as a baseline for Sex
+
+2)Write down the general regression model relating starting salary Y to both college and sex.\
+
+Answer: Y=β0+β1 Xengineering+β2 Xliberal_arts+β3 Xnursing+ β4 Xmale+ϵ\
+β0 is the intercept for estimated salary when all dummy variables are zero\
+β1,β2, β3 are coefficents for dummy variables and β4 is dummy variable for sex.\
+
+3.How would your model change if students in Engineering have the same starting salary as students in Business?\
+Below is the modified regression model if Engineering have the same starting salary as students in Business :\
+
+  Y=β0+β2 Xliberal_arts+β3 Xnursing+ β4 Xmale+ϵ\
+ Here we are doing Xengineering as zero as difference in average starting salary between Engineering and Business would be zero.
+
+ # Question 3:
+
+```{r}
+#import text data in R
+mydata=read.table("salary_IS.txt", header=T, sep="\t")
+Salary=mydata[,1]
+Numempl=mydata[,2]
+Margin=mydata[,3]
+Ipcost=mydata[,4]
+```
+
+1)Analyze the interrelationships between variables using scatterplots and correlation values. Is salary linearly related to the three predictors? Which variables are more strongly related?
+
+```{r}
+plot(Numempl,Salary, main="Scatterplot of Number of Employees vs Salary")
+plot(Margin,Salary, main="Margin vs Salary")
+plot(Ipcost,Salary, main="Scatterplot of Ipcost vs Salary")
+plot(Ipcost,Numempl, main="Scatterplot of Ipcost vs Salary")
+plot(Ipcost,Margin, main="Scatterplot of Ipcost vs Salary")
+plot(Numempl,Margin, main="Scatterplot of Ipcost vs Salary")
+
+ 
+cor(Numempl,Salary)
+cor(Margin,Salary)
+cor(Ipcost,Salary)
+
+cor(mydata, method="pearson") 
+```
+
+Salary versus Number of employees shows weak linear relationship and has many outliers.Salary versus Margin dipicts moderate liner relationship with considerable outliers. Salary versus Ipcost has moderate liner realtionship with fewer outliers. Salary and ipcost have the highest correlation value (0.5298), indicating a moderate positive linear relationship.So salary and ipcost are strongly related.
+
+2)  Write down the regression model to predict salary using the other three variables as predictors
+
+```{r}
+sal_model <- lm(Salary ~ Numempl+Margin+Ipcost, data=mydata)
+summary(sal_model)
+```
+
+Regression Model Ysalary=β0+β1 Xnumempl+β2 Xmargin+β3 Xipcost +ϵ\
+
+Ysalary is the salary i.e. a response variable. β0 is y-intercept and β1,β2,β3 are coefficients of predictor variable.ϵ is error. While all X's are predictors.\
+
+3)  Which of the three predictors have a significant effect on salary?
+
+```{r}
+salary_model <- lm(Salary ~ Numempl+Margin+Ipcost, data=mydata)
+summary(sal_model)
+
+summary(salary_model)$coefficients[, "Pr(>|t|)"]>0.05
+```
+
+Here, the p-value of Numempl is greater than 0.05 that is alpha which shows that there is no significant relationship between salary and Numempl. However, p-value for margin is 0.03511 and for ipcost is 0.00598. Both of their p-value is less than 0.05 which shows that both has significant relationship with salary. Hence, any increase in both the values will make changes in salary as well.
+
+4)  We refit the model using only the two significant attributes. Interpret each of the partial slope coefficients in the new model.
+
+```{r}
+updated_sal_model <- lm(Salary ~ Margin+Ipcost, data=mydata)
+summary(updated_sal_model)
+```
+
+```{r}
+coef(updated_sal_model)
+```
+
+The slope margin is 0.09091164 and for IPcost is 0.20310874 with intercept 25.97304333. Both margin and IPcost have positive relationship with salary, any changes in both, will make change in salary.
+
+5)  Analyze the Coefficient of Determination R2
+
+```{r}
+rsquare=summary(updated_sal_model)$r.squared
+rsquare
+```
+
+Here, R-squared value i.e. 0.3414687 indicates 34.14% variance in the average salary can be explained by the independent variables included in the model (margin and ipcost).
+
+6)  Analyze the goodness of fit test (write down test hypothesis, test statistic and p-value, and draw conclusions). What can you conclude about the predictive power of the model?
+
+```{r}
+Ho_salary = lm(Salary ~ 1, mydata)
+f_tests = anova(Ho_salary,updated_sal_model)
+f_tests
+anova(Ho_salary)
+```
+
+Here, Ho_salary represent null hypothesis which says that none of the predictor variable has significant change on salary. The result of statistic is F_test=15.037 and p_value =5.479e-06 with alpha 0.05 which is the significance level or the probability of rejecting a true null hypothesis in a statistical hypothesis test. In this, I determined that p_value i.e.5.479e-06 \<0.05. Hence, the null hypothesis is rejected as p-value is less than significant level. Rejection indicated that there is significant relationship with one or more variables and average salary.
+
+7)  Analyze the standardized coefficients of the model, which variable has the strongest effect on Y?
+
+```{r}
+standardized_fit <- lm(salary ~ scale(margin) + scale(ipcost), data = mydata)
+summary(standardized_fit)
+```
+
+Here, we can see the absolute value of standardized coefficients for margin and ipcost 0.3562 and 0.4395. We can observe that the value of ipcost is larger than margin which implies that ipcost has greater effect than margin in salary when considering about standardized coefficents.
+
+# Question 4
+
+Laughter is often called ''the best medicine,'' since studies have shown that laughter can reduce muscle tension and increase oxygenation of the blood. In the International Journal of Obesity (January 2007), researchers at Vanderbilt University investigated the physiological changes that accompany laughter. Ninety subjects (18--34 years old) watched film clips designed to evoke laughter. During the laughing period, the researchers measured the heart rate (beats per minute) of each subject with the following summary results: y_bar = 73.5, s = 6. It is well known that the mean resting heart rate of adults is 71 beats/minute. At α = .05, is there sufficient evidence to indicate that the true mean heart rate during laughter exceeds 71 beats/minute? Show your work.
+
+Answer :\
+Hypothesis Testing Null Hypothesis Ho: µ = 71 Alternative Hypothesis Ha : µ \> 71
+
+Degree of freedom n-1 Sample mean y_bar=73.5 ,Standard deviation = 6 n=90
+
+```{r}
+n=90
+alpha=0.05
+sam_sd=6
+y_bar=73.5
+df=n-1
+pop_mean=71
+
+t_test=(y_bar-pop_mean)/(sam_sd/sqrt(n))
+t_test
+```
+
+```{r}
+p_value = pt(t_test, df, lower.tail = FALSE)
+p_value
+if (p_value < 0.05) {
+  cat("The model is statistically significant as a whole (reject the null hypothesis).")
+} else {
+  cat("The model is not statistically significant as a whole (fail to reject the null hypothesis).")
+}
+
+```
+
+if p-value is less than alpha then null hypothesis is rejected. if p-value is greater than alpha then null hypothesis cannot be rejected.
+
+Here we conclude that true mean heart rate exceeds71 beats/minute.
